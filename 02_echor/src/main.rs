@@ -10,7 +10,7 @@ fn main() {
                 .value_name("TEXT")
                 .help("Input text")
                 .required(true)
-                .num_args(1..),
+                .action(ArgAction::Append),
         )
         .arg(
             Arg::new("omit_newline")

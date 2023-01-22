@@ -18,9 +18,9 @@ pub fn run(config: Config) -> MyResult<()> {
     for filename in config.files {
         match open(&filename) {
             Err(err) => eprintln!("Failed to open {}: {}", filename, err),
-            Ok(reader) => {
+            Ok(file) => {
                 let mut n = 0;
-                for line in reader.lines() {
+                for line in file.lines() {
                     let line = line?;
                     if config.number_lines || config.number_nonblank_lines && !line.is_empty() {
                         n += 1;
@@ -44,8 +44,8 @@ pub fn get_args() -> MyResult<Config> {
             Arg::new("files")
                 .value_name("FILE")
                 .help("Input file(s)")
-                .num_args(1..)
-                .default_value("-"),
+                .default_value("-")
+                .action(ArgAction::Append),
         )
         .arg(
             Arg::new("number_lines")
@@ -64,7 +64,11 @@ pub fn get_args() -> MyResult<Config> {
         )
         .get_matches();
 
-    let files: Vec<String> = matches.get_many("files").unwrap().cloned().collect();
+    let files: Vec<String> = matches
+        .get_many("files")
+        .unwrap_or_default()
+        .cloned()
+        .collect();
     let number_lines = matches.get_flag("number_lines");
     let number_nonblank_lines = matches.get_flag("number_nonblank_lines");
 
