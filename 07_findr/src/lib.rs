@@ -30,33 +30,34 @@ pub fn get_args() -> MyResult<Cli> {
 }
 
 pub fn run(cli: Cli) -> MyResult<()> {
+    let type_filter = |entry: &DirEntry| {
+        cli.entry_type.is_empty()
+            || cli.entry_type.iter().any(|entry_type| match entry_type {
+                EntryType::F => entry.path().is_file() && !entry.path_is_symlink(),
+                EntryType::D => entry.path().is_dir(),
+                EntryType::L => entry.path_is_symlink(),
+            })
+    };
+    let name_filter = |entry: &DirEntry| {
+        cli.name.is_empty()
+            || cli
+                .name
+                .iter()
+                .any(|re| re.is_match(&entry.file_name().to_string_lossy()))
+    };
     for path in &cli.path {
-        for entry in WalkDir::new(path) {
-            match entry {
-                Ok(entry) if filter(&entry, &cli.name, &cli.entry_type) => {
-                    println!("{}", entry.path().display())
+        WalkDir::new(path)
+            .into_iter()
+            .filter_map(|entry| match entry {
+                Ok(entry) => Some(entry),
+                Err(e) => {
+                    eprintln!("{}", e);
+                    None
                 }
-                Err(e) => eprintln!("{}", e),
-                _ => (),
-            }
-        }
+            })
+            .filter(type_filter)
+            .filter(name_filter)
+            .for_each(|entry| println!("{}", entry.path().display()));
     }
     Ok(())
-}
-
-fn filter(entry: &DirEntry, names: &Vec<Regex>, entry_types: &Vec<EntryType>) -> bool {
-    let entry_type = if entry.path().is_symlink() {
-        EntryType::L
-    } else if entry.path().is_file() {
-        EntryType::F
-    } else if entry.path().is_dir() {
-        EntryType::D
-    } else {
-        unreachable!()
-    };
-    (names.is_empty()
-        || names
-            .iter()
-            .any(|re| re.is_match(&entry.file_name().to_string_lossy())))
-        && (entry_types.is_empty() || entry_types.contains(&entry_type))
 }
