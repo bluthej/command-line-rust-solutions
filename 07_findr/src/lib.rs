@@ -1,4 +1,5 @@
 use clap::{Parser, ValueEnum};
+use regex::Regex;
 use std::error::Error;
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -10,7 +11,7 @@ pub struct Cli {
     path: Vec<String>,
 
     #[arg(short, long, help = "Name", num_args(0..))]
-    name: Vec<String>,
+    name: Vec<Regex>,
 
     #[arg(short = 't', long = "type", help = "Entry type", value_name = "TYPE", num_args(0..))]
     entry_type: Vec<EntryType>,
