@@ -1,6 +1,7 @@
 use clap::{Parser, ValueEnum};
 use regex::Regex;
 use std::error::Error;
+use walkdir::{DirEntry, WalkDir};
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
@@ -29,6 +30,33 @@ pub fn get_args() -> MyResult<Cli> {
 }
 
 pub fn run(cli: Cli) -> MyResult<()> {
-    println!("{:?}", cli);
+    for path in &cli.path {
+        for entry in WalkDir::new(path) {
+            match entry {
+                Ok(entry) if filter(&entry, &cli.name, &cli.entry_type) => {
+                    println!("{}", entry.path().display())
+                }
+                Err(e) => eprintln!("{}", e),
+                _ => (),
+            }
+        }
+    }
     Ok(())
+}
+
+fn filter(entry: &DirEntry, names: &Vec<Regex>, entry_types: &Vec<EntryType>) -> bool {
+    let entry_type = if entry.path().is_symlink() {
+        EntryType::L
+    } else if entry.path().is_file() {
+        EntryType::F
+    } else if entry.path().is_dir() {
+        EntryType::D
+    } else {
+        unreachable!()
+    };
+    (names.is_empty()
+        || names
+            .iter()
+            .any(|re| re.is_match(&entry.file_name().to_string_lossy())))
+        && (entry_types.is_empty() || entry_types.contains(&entry_type))
 }
