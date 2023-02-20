@@ -260,18 +260,13 @@ pub fn run(config: Config) -> MyResult<()> {
                     }
                 }
                 Fields(pos) => {
+                    let delim = String::from_utf8(vec![config.delimiter])?;
                     let mut rdr = ReaderBuilder::new()
                         .delimiter(config.delimiter)
                         .from_reader(file);
-                    for result in rdr.records() {
-                        let record = result?;
-                        println!(
-                            "{}",
-                            extract_fields(&record, pos)
-                                .into_iter()
-                                .map(|v| format!("{:20}", v))
-                                .collect::<String>()
-                        );
+                    println!("{}", extract_fields(rdr.headers()?, pos).join(&delim));
+                    for record in rdr.records() {
+                        println!("{}", extract_fields(&record?, pos).join(&delim));
                     }
                 }
             },
@@ -307,7 +302,13 @@ fn extract_bytes(line: &str, byte_pos: &[Range<usize>]) -> String {
 }
 
 fn extract_fields(record: &StringRecord, field_pos: &[Range<usize>]) -> Vec<String> {
-    unimplemented!();
+    let fields: Vec<&str> = record.iter().collect();
+    field_pos
+        .iter()
+        .filter_map(|range| fields.get(range.clone()))
+        .flatten()
+        .map(|&s| s.to_owned())
+        .collect()
 }
 
 fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
