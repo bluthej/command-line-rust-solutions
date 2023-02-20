@@ -1,5 +1,6 @@
 use crate::Extract::*;
 use clap::{ArgGroup, Parser};
+use csv::{ReaderBuilder, StringRecord};
 use std::{
     error::Error,
     fs::File,
@@ -243,17 +244,37 @@ pub fn run(config: Config) -> MyResult<()> {
     for filename in &config.files {
         match open(filename) {
             Err(err) => eprintln!("{}: {}", filename, err),
-            Ok(mut file) => {
-                let mut line = String::new();
-                while file.read_line(&mut line)? > 0 {
-                    match &config.extract {
-                        Bytes(range) => println!("{}", extract_bytes(&line, &range)),
-                        Chars(range) => println!("{}", extract_chars(&line, &range)),
-                        _ => (),
+            Ok(mut file) => match &config.extract {
+                Bytes(pos) => {
+                    let mut line = String::new();
+                    while file.read_line(&mut line)? > 0 {
+                        println!("{}", extract_bytes(&line, &pos));
+                        line.clear();
                     }
-                    line.clear();
                 }
-            }
+                Chars(pos) => {
+                    let mut line = String::new();
+                    while file.read_line(&mut line)? > 0 {
+                        println!("{}", extract_chars(&line, &pos));
+                        line.clear();
+                    }
+                }
+                Fields(pos) => {
+                    let mut rdr = ReaderBuilder::new()
+                        .delimiter(config.delimiter)
+                        .from_reader(file);
+                    for result in rdr.records() {
+                        let record = result?;
+                        println!(
+                            "{}",
+                            extract_fields(&record, pos)
+                                .into_iter()
+                                .map(|v| format!("{:20}", v))
+                                .collect::<String>()
+                        );
+                    }
+                }
+            },
         }
     }
     Ok(())
@@ -283,6 +304,10 @@ fn extract_bytes(line: &str, byte_pos: &[Range<usize>]) -> String {
         })
         .collect::<Vec<_>>()
         .join("")
+}
+
+fn extract_fields(record: &StringRecord, field_pos: &[Range<usize>]) -> Vec<String> {
+    unimplemented!();
 }
 
 fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
