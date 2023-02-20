@@ -1,6 +1,6 @@
 use crate::Extract::*;
 use clap::{ArgGroup, Parser};
-use csv::{ReaderBuilder, StringRecord};
+use csv::{ReaderBuilder, StringRecord, WriterBuilder};
 use std::{
     error::Error,
     fs::File,
@@ -244,29 +244,27 @@ pub fn run(config: Config) -> MyResult<()> {
     for filename in &config.files {
         match open(filename) {
             Err(err) => eprintln!("{}: {}", filename, err),
-            Ok(mut file) => match &config.extract {
+            Ok(file) => match &config.extract {
                 Bytes(pos) => {
-                    let mut line = String::new();
-                    while file.read_line(&mut line)? > 0 {
-                        println!("{}", extract_bytes(&line, &pos));
-                        line.clear();
+                    for line in file.lines() {
+                        println!("{}", extract_bytes(&line?, &pos));
                     }
                 }
                 Chars(pos) => {
-                    let mut line = String::new();
-                    while file.read_line(&mut line)? > 0 {
-                        println!("{}", extract_chars(&line, &pos));
-                        line.clear();
+                    for line in file.lines() {
+                        println!("{}", extract_chars(&line?, &pos));
                     }
                 }
                 Fields(pos) => {
-                    let delim = String::from_utf8(vec![config.delimiter])?;
                     let mut rdr = ReaderBuilder::new()
                         .delimiter(config.delimiter)
+                        .has_headers(false)
                         .from_reader(file);
-                    println!("{}", extract_fields(rdr.headers()?, pos).join(&delim));
+                    let mut wtr = WriterBuilder::new()
+                        .delimiter(config.delimiter)
+                        .from_writer(io::stdout());
                     for record in rdr.records() {
-                        println!("{}", extract_fields(&record?, pos).join(&delim));
+                        wtr.write_record(extract_fields(&record?, pos))?;
                     }
                 }
             },
@@ -306,6 +304,6 @@ fn extract_fields(record: &StringRecord, field_pos: &[Range<usize>]) -> Vec<Stri
         .iter()
         .filter_map(|range| fields.get(range.clone()))
         .flatten()
-        .map(|&s| s.to_string())
+        .map(|s| s.to_string())
         .collect()
 }
