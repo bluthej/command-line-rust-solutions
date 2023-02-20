@@ -275,6 +275,13 @@ pub fn run(config: Config) -> MyResult<()> {
     Ok(())
 }
 
+fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
+    match filename {
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
+    }
+}
+
 fn extract_chars(line: &str, char_pos: &[Range<usize>]) -> String {
     let chars: Vec<char> = line.chars().collect();
     char_pos
@@ -309,11 +316,4 @@ fn extract_fields(record: &StringRecord, field_pos: &[Range<usize>]) -> Vec<Stri
         .flatten()
         .map(|&s| s.to_owned())
         .collect()
-}
-
-fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
-    match filename {
-        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
-    }
 }
