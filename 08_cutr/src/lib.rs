@@ -286,26 +286,18 @@ fn extract_chars(line: &str, char_pos: &[Range<usize>]) -> String {
     let chars: Vec<char> = line.chars().collect();
     char_pos
         .iter()
-        .filter_map(|range| {
-            chars
-                .get(range.clone())
-                .map(|chars| chars.iter().collect::<String>())
-        })
-        .collect::<Vec<_>>()
-        .join("")
+        .filter_map(|range| chars.get(range.clone()))
+        .flatten()
+        .collect()
 }
 
 fn extract_bytes(line: &str, byte_pos: &[Range<usize>]) -> String {
     let bytes: Vec<u8> = line.as_bytes().to_vec();
     byte_pos
         .iter()
-        .filter_map(|range| {
-            bytes
-                .get(range.clone())
-                .map(|bytes| String::from_utf8_lossy(bytes))
-        })
-        .collect::<Vec<_>>()
-        .join("")
+        .filter_map(|range| bytes.get(range.clone()))
+        .map(String::from_utf8_lossy)
+        .collect()
 }
 
 fn extract_fields(record: &StringRecord, field_pos: &[Range<usize>]) -> Vec<String> {
@@ -314,6 +306,6 @@ fn extract_fields(record: &StringRecord, field_pos: &[Range<usize>]) -> Vec<Stri
         .iter()
         .filter_map(|range| fields.get(range.clone()))
         .flatten()
-        .map(|&s| s.to_owned())
+        .map(|&s| s.to_string())
         .collect()
 }
