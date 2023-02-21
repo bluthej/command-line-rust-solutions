@@ -1,5 +1,5 @@
 use clap::Parser;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use std::error::Error;
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -27,7 +27,11 @@ pub struct Cli {
 }
 
 pub fn get_args() -> MyResult<Cli> {
-    Cli::try_parse().map_err(|e| e.into())
+    let mut cli = Cli::try_parse()?;
+    cli.pattern = RegexBuilder::new(cli.pattern.as_str())
+        .case_insensitive(cli.insensitive)
+        .build()?;
+    Ok(cli)
 }
 
 pub fn run(cli: Cli) -> MyResult<()> {
