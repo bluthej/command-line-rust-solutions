@@ -1,6 +1,10 @@
 use clap::Parser;
 use regex::{Regex, RegexBuilder};
-use std::{error::Error, fs};
+use std::{
+    error::Error,
+    fs::{self, File},
+    io::{self, BufRead, BufReader},
+};
 use walkdir::WalkDir;
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -123,5 +127,12 @@ mod tests {
         let files = find_files(&[bad], false);
         assert_eq!(files.len(), 1);
         assert!(files[0].is_err());
+    }
+}
+
+fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
+    match filename {
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
     }
 }
