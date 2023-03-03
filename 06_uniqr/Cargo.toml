@@ -1,8 +1,8 @@
 [package]
 name = "uniqr"
-author = "bluthej <joffrey.bluthe@e.email>"
+authors = ["bluthej <joffrey.bluthe@e.email>"]
 version = "0.1.0"
-about = "Rust uniq"
+description = "Rust uniq"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
