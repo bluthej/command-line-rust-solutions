@@ -40,13 +40,28 @@ pub fn get_args() -> MyResult<Cli> {
 }
 
 pub fn run(cli: Cli) -> MyResult<()> {
-    println!("pattern \"{}\"", cli.pattern);
-
     let entries = find_files(&cli.files, cli.recursive);
+    let n_entrie = entries.len();
     for entry in entries {
         match entry {
             Err(e) => eprintln!("{}", e),
-            Ok(filename) => println!("file \"{}\"", filename),
+            Ok(filename) => match open(&filename) {
+                Err(e) => eprintln!("{}: {}", filename, e),
+                Ok(file) => {
+                    let matches = find_lines(file, &cli.pattern, cli.invert_match)?;
+                    for m in matches {
+                        print!(
+                            "{}{}",
+                            if n_entrie > 1 {
+                                format!("{filename}:")
+                            } else {
+                                String::from("")
+                            },
+                            m
+                        );
+                    }
+                }
+            },
         }
     }
 
@@ -165,21 +180,16 @@ fn find_lines<T: BufRead>(
     pattern: &Regex,
     invert_match: bool,
 ) -> MyResult<Vec<String>> {
-    file.lines()
-        .collect::<Result<Vec<String>, _>>()
-        .map(|lines| {
-            lines
-                .into_iter()
-                .filter(|line| {
-                    if invert_match {
-                        !pattern.is_match(line)
-                    } else {
-                        pattern.is_match(line)
-                    }
-                })
-                .collect()
-        })
-        .map_err(|e| format!("{}", e).into())
+    let mut matches = Vec::new();
+    let mut line = String::new();
+    while file.read_line(&mut line)? > 0 {
+        if (invert_match && !pattern.is_match(&line)) || (!invert_match && pattern.is_match(&line))
+        {
+            matches.push(line.clone());
+        }
+        line.clear();
+    }
+    Ok(matches)
 }
 
 fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
