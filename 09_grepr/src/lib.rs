@@ -49,16 +49,16 @@ pub fn run(cli: Cli) -> MyResult<()> {
                 Err(e) => eprintln!("{}: {}", filename, e),
                 Ok(file) => {
                     let matches = find_lines(file, &cli.pattern, cli.invert_match)?;
+                    let mut prefix = String::new();
+                    if n_entrie > 1 {
+                        prefix.push_str(&format!("{filename}:"))
+                    }
+                    if cli.count {
+                        println!("{}{}", prefix, matches.len());
+                        continue;
+                    }
                     for m in matches {
-                        print!(
-                            "{}{}",
-                            if n_entrie > 1 {
-                                format!("{filename}:")
-                            } else {
-                                String::from("")
-                            },
-                            m
-                        );
+                        print!("{}{}", prefix, m);
                     }
                 }
             },
