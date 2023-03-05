@@ -76,22 +76,22 @@ fn find_files(paths: &[String], recursive: bool) -> Vec<MyResult<String>> {
             continue;
         }
         match fs::metadata(path) {
-            Ok(attr) if !recursive && attr.is_dir() => {
-                res.push(Err(format!("{} is a directory", path).into()));
-                continue;
-            }
             Err(e) => {
                 res.push(Err(format!("{}: {}", path, e).into()));
+                continue;
+            }
+            Ok(attr) if !recursive && attr.is_dir() => {
+                res.push(Err(format!("{} is a directory", path).into()));
                 continue;
             }
             _ => (),
         }
         for entry in WalkDir::new(path) {
             match entry {
-                Ok(entry) if entry.path().is_file() => {
-                    res.push(Ok(entry.path().to_string_lossy().to_string()))
-                }
                 Err(e) => res.push(Err(format!("{}: {}", path, e).into())),
+                Ok(entry) if entry.path().is_file() => {
+                    res.push(Ok(entry.path().display().to_string()))
+                }
                 _ => (),
             }
         }
@@ -183,8 +183,7 @@ fn find_lines<T: BufRead>(
     let mut matches = Vec::new();
     let mut line = String::new();
     while file.read_line(&mut line)? > 0 {
-        if (invert_match && !pattern.is_match(&line)) || (!invert_match && pattern.is_match(&line))
-        {
+        if invert_match ^ pattern.is_match(&line) {
             matches.push(line.clone());
         }
         line.clear();
