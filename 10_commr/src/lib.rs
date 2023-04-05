@@ -58,6 +58,7 @@ pub fn run(cli: Cli) -> MyResult<()> {
     }
 
     let del = cli.delimiter.to_string();
+    let pref1 = "".to_string();
     let pref2 = del.repeat(cli.show_col1 as usize);
     let pref3 = del.repeat(cli.show_col1 as usize + cli.show_col2 as usize);
 
@@ -69,45 +70,39 @@ pub fn run(cli: Cli) -> MyResult<()> {
         }
     };
 
-    let file1 = open(file1)?;
-    let file2 = open(file2)?;
-    let mut lines1 = file1.lines().filter_map(|l| l.ok().map(choose_case));
-    let mut lines2 = file2.lines().filter_map(|l| l.ok().map(choose_case));
+    let print = |pref: &str, line: &str, show: bool| {
+        if show {
+            println!("{}{}", pref, line);
+        }
+    };
+
+    let mut lines1 = open(file1)?.lines().filter_map(Result::ok).map(choose_case);
+    let mut lines2 = open(file2)?.lines().filter_map(Result::ok).map(choose_case);
     let mut line1 = lines1.next();
     let mut line2 = lines2.next();
     loop {
         match (&line1, &line2) {
             (Some(l1), Some(l2)) => match l1.cmp(l2) {
                 Ordering::Less => {
-                    if cli.show_col1 {
-                        println!("{}", l1);
-                    }
+                    print(&pref1, l1, cli.show_col1);
                     line1 = lines1.next();
                 }
                 Ordering::Greater => {
-                    if cli.show_col2 {
-                        println!("{}{}", pref2, l2);
-                    }
+                    print(&pref2, l2, cli.show_col2);
                     line2 = lines2.next();
                 }
                 Ordering::Equal => {
-                    if cli.show_col3 {
-                        println!("{}{}", pref3, l1);
-                    }
+                    print(&pref3, l1, cli.show_col3);
                     line1 = lines1.next();
                     line2 = lines2.next();
                 }
             },
             (Some(l1), None) => {
-                if cli.show_col1 {
-                    println!("{}", l1);
-                }
+                print(&pref1, l1, cli.show_col1);
                 line1 = lines1.next();
             }
             (None, Some(l2)) => {
-                if cli.show_col2 {
-                    println!("{}{}", pref2, l2);
-                }
+                print(&pref2, l2, cli.show_col2);
                 line2 = lines2.next();
             }
             (None, None) => break,
