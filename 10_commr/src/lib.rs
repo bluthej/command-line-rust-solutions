@@ -48,7 +48,6 @@ pub fn get_args() -> MyResult<Cli> {
     })
 }
 
-#[allow(unused)]
 pub fn run(cli: Cli) -> MyResult<()> {
     let file1 = &cli.file1;
     let file2 = &cli.file2;
