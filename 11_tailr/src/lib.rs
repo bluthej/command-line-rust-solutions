@@ -1,9 +1,5 @@
 use crate::TakeValue::*;
-use std::{
-    error::Error,
-    fs::File,
-    io::{self, BufRead, BufReader},
-};
+use std::{error::Error, fs::File, io::Read};
 
 use clap::Parser;
 
@@ -50,23 +46,28 @@ pub fn get_args() -> MyResult<Cli> {
 
 #[allow(unused)]
 pub fn run(cli: Cli) -> MyResult<()> {
-    println!("{:#?}", cli);
+    for filename in cli.files {
+        let file = File::open(&filename).map_err(|e| format!("{}: {}", filename, e))?;
+        let (total_lines, total_bytes) = count_lines_bytes(&filename)?;
+        println!(
+            "{} has {} lines and {} bytes",
+            filename, total_lines, total_bytes
+        );
+    }
     Ok(())
 }
 
-#[allow(unused)]
-fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
-    match filename {
-        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(
-            File::open(filename).map_err(|e| format!("{}: {}", filename, e))?,
-        ))),
-    }
+fn count_lines_bytes(filename: &str) -> MyResult<(i64, i64)> {
+    let mut file = File::open(filename)?;
+    let mut buf = String::new();
+    let n_bytes = file.read_to_string(&mut buf)? as i64;
+    let n_lines = buf.lines().count() as i64;
+    Ok((n_lines, n_bytes))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_num, TakeValue::*};
+    use super::{count_lines_bytes, parse_num, TakeValue::*};
     #[test]
     fn test_parse_num() {
         // All integers should be interpreted as negative numbers
@@ -110,5 +111,15 @@ mod tests {
         let res = parse_num("foo");
         assert!(res.is_err());
         assert_eq!(res.unwrap_err(), "foo");
+    }
+
+    #[test]
+    fn test_count_lines_bytes() {
+        let res = count_lines_bytes("tests/inputs/one.txt");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), (1, 24));
+        let res = count_lines_bytes("tests/inputs/ten.txt");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), (10, 49));
     }
 }
