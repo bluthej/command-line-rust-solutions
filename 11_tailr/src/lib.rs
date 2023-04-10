@@ -32,7 +32,7 @@ pub struct Cli {
 }
 
 fn parse_num(s: &str) -> Result<TakeValue, String> {
-    let input = if !s.is_empty() && !s.starts_with('+') && !s.starts_with('-') {
+    let input = if !s.starts_with(['+', '-']) {
         format!("-{s}")
     } else {
         s.to_string()
