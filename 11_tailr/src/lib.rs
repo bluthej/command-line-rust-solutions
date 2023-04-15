@@ -2,7 +2,7 @@ use crate::TakeValue::*;
 use std::{
     error::Error,
     fs::File,
-    io::{BufRead, BufReader, Read},
+    io::{BufRead, BufReader, Read, Seek, SeekFrom},
 };
 
 use clap::Parser;
@@ -50,11 +50,20 @@ pub fn get_args() -> MyResult<Cli> {
 
 #[allow(unused)]
 pub fn run(cli: Cli) -> MyResult<()> {
-    for filename in cli.files {
-        let file = File::open(&filename).map_err(|e| format!("{}: {}", filename, e))?;
-        let (total_lines, total_bytes) = count_lines_bytes(&filename)?;
+    let l = cli.files.len();
+    let mut is_first_file = true;
+    let mut new_line = "".to_string();
+    for filename in &cli.files {
+        if l > 1 && !cli.quiet {
+            println!("{}==> {} <==", new_line, filename);
+            if new_line.is_empty() {
+                new_line.push('\n');
+            }
+        }
+        let file = File::open(filename).map_err(|e| format!("{}: {}", filename, e))?;
+        let (total_lines, total_bytes) = count_lines_bytes(filename)?;
         match &cli.bytes {
-            Some(_) => todo!(),
+            Some(bytes) => print_bytes(BufReader::new(file), bytes, total_bytes),
             None => print_lines(BufReader::new(file), &cli.lines, total_lines),
         };
     }
@@ -69,11 +78,31 @@ fn count_lines_bytes(filename: &str) -> MyResult<(i64, i64)> {
     Ok((n_lines, n_bytes))
 }
 
-fn print_lines(file: impl BufRead, num_lines: &TakeValue, total_lines: i64) -> MyResult<()> {
+fn print_lines(mut file: impl BufRead, num_lines: &TakeValue, total_lines: i64) -> MyResult<()> {
     if let Some(start_line) = get_start_index(num_lines, total_lines) {
-        for line in file.lines().skip(start_line as usize) {
-            println!("{}", line?);
+        let mut line = String::new();
+        let mut n = 0;
+        while file.read_line(&mut line)? > 0 {
+            n += 1;
+            if n > start_line {
+                print!("{}", line);
+            }
+            line.clear();
         }
+    }
+    Ok(())
+}
+
+fn print_bytes<T: Read + Seek>(
+    mut file: T,
+    num_bytes: &TakeValue,
+    total_bytes: i64,
+) -> MyResult<()> {
+    if let Some(start_byte) = get_start_index(num_bytes, total_bytes) {
+        file.seek(SeekFrom::Start(start_byte))?;
+        let bytes = file.bytes().collect::<Result<Vec<u8>, _>>()?;
+        let output = String::from_utf8_lossy(&bytes);
+        print!("{output}");
     }
     Ok(())
 }
@@ -83,7 +112,7 @@ fn get_start_index(take_val: &TakeValue, total: i64) -> Option<u64> {
         return None;
     }
     match take_val {
-        PlusZero => Some(total as u64 - 1),
+        PlusZero => Some(0),
         &TakeNum(index) => match index.cmp(&0) {
             std::cmp::Ordering::Less => Some((total as u64).saturating_sub(-index as u64)),
             std::cmp::Ordering::Equal => None,
