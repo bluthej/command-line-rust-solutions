@@ -52,13 +52,9 @@ pub fn get_args() -> MyResult<Cli> {
 pub fn run(cli: Cli) -> MyResult<()> {
     let l = cli.files.len();
     let mut is_first_file = true;
-    let mut new_line = "".to_string();
-    for filename in &cli.files {
+    for (num, filename) in cli.files.iter().enumerate() {
         if l > 1 && !cli.quiet {
-            println!("{}==> {} <==", new_line, filename);
-            if new_line.is_empty() {
-                new_line.push('\n');
-            }
+            println!("{}==> {} <==", if num > 0 { "\n" } else { "" }, filename);
         }
         let file = File::open(filename).map_err(|e| format!("{}: {}", filename, e))?;
         let (total_lines, total_bytes) = count_lines_bytes(filename)?;
@@ -100,9 +96,9 @@ fn print_bytes<T: Read + Seek>(
 ) -> MyResult<()> {
     if let Some(start_byte) = get_start_index(num_bytes, total_bytes) {
         file.seek(SeekFrom::Start(start_byte))?;
-        let bytes = file.bytes().collect::<Result<Vec<u8>, _>>()?;
-        let output = String::from_utf8_lossy(&bytes);
-        print!("{output}");
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf)?;
+        print!("{}", String::from_utf8_lossy(&buf));
     }
     Ok(())
 }
