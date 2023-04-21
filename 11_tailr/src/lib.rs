@@ -48,7 +48,6 @@ pub fn get_args() -> MyResult<Cli> {
     Cli::try_parse().map_err(From::from)
 }
 
-#[allow(unused)]
 pub fn run(cli: Cli) -> MyResult<()> {
     let l = cli.files.len();
     let mut is_first_file = true;
