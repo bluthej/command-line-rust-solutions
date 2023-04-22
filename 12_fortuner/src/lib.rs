@@ -1,3 +1,4 @@
+use rand::prelude::*;
 use regex::{Regex, RegexBuilder};
 use std::{error::Error, fs::File, io::Read, path::PathBuf};
 use walkdir::WalkDir;
@@ -83,9 +84,16 @@ fn read_fortunes(paths: &[PathBuf]) -> MyResult<Vec<Fortune>> {
     Ok(res)
 }
 
+fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
+    let mut rng = seed.map_or(StdRng::from_entropy(), StdRng::seed_from_u64);
+    fortunes
+        .choose(&mut rng)
+        .map(|fortune| fortune.text.clone())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{find_files, read_fortunes};
+    use super::{find_files, pick_fortune, read_fortunes, Fortune};
     use std::path::PathBuf;
 
     #[test]
@@ -155,5 +163,31 @@ A: A bad idea (bad-eye deer)."
         ]);
         assert!(res.is_ok());
         assert_eq!(res.unwrap().len(), 11);
+    }
+
+    #[test]
+    fn test_pick_fortune() {
+        // Create a slice of fortunes
+        let fortunes = &[
+            Fortune {
+                source: "fortunes".to_string(),
+                text: "You cannot achieve the impossible without \
+attempting the absurd."
+                    .to_string(),
+            },
+            Fortune {
+                source: "fortunes".to_string(),
+                text: "Assumption is the mother of all screw-ups.".to_string(),
+            },
+            Fortune {
+                source: "fortunes".to_string(),
+                text: "Neckties strangle clear thinking.".to_string(),
+            },
+        ];
+        // Pick a fortune with a seed
+        assert_eq!(
+            pick_fortune(fortunes, Some(1)).unwrap(),
+            "Neckties strangle clear thinking.".to_string()
+        );
     }
 }
