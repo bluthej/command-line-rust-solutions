@@ -37,7 +37,7 @@ fn dies_bad_file() -> TestResult {
     let bad = gen_bad_file();
     let expected = format!("{}: .* [(]os error 2[)]", bad);
     Command::cargo_bin(PRG)?
-        .args(&[LITERATURE, &bad])
+        .args([LITERATURE, &bad])
         .assert()
         .failure()
         .stderr(predicate::str::is_match(expected)?);
@@ -48,9 +48,9 @@ fn dies_bad_file() -> TestResult {
 #[test]
 fn dies_bad_seed() -> TestResult {
     let bad = random_string();
-    let expected = format!("\"{}\" not a valid integer", &bad);
+    let expected = format!("invalid value '{}' for '--seed <SEED>'", &bad);
     Command::cargo_bin(PRG)?
-        .args(&[LITERATURE, "--seed", &bad])
+        .args([LITERATURE, "--seed", &bad])
         .assert()
         .failure()
         .stderr(predicate::str::contains(expected));
