@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use regex::{Regex, RegexBuilder};
 use std::{error::Error, fs::File, io::Read, path::PathBuf};
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 
 use clap::Parser;
 
@@ -61,18 +61,20 @@ pub fn run(cli: Cli) -> MyResult<()> {
 }
 
 fn find_files(paths: &[String]) -> MyResult<Vec<PathBuf>> {
-    let mut res = Vec::new();
-    for path in paths {
-        for entry in WalkDir::new(path) {
-            let path = entry?.into_path();
-            if path.is_file() && !path.ends_with(".dat") {
-                res.push(path);
-            }
-        }
-    }
-    res.sort();
-    res.dedup();
-    Ok(res)
+    paths
+        .iter()
+        .flat_map(|path| {
+            WalkDir::new(path)
+                .into_iter()
+                .map(|e| e.map(DirEntry::into_path).map_err(From::from))
+        })
+        .collect::<MyResult<Vec<_>>>()
+        .map(|mut files| {
+            files.sort();
+            files.dedup();
+            files.retain(|file| file.is_file() && !file.ends_with(".dat"));
+            files
+        })
 }
 
 #[derive(Debug)]
@@ -95,7 +97,7 @@ fn read_fortunes(paths: &[PathBuf]) -> MyResult<Vec<Fortune>> {
                     source: path
                         .file_name()
                         .and_then(|f| f.to_str())
-                        .unwrap_or("")
+                        .unwrap_or("Invalid source")
                         .to_string(),
                     text: phrase.trim().to_string(),
                 }),
