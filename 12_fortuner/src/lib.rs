@@ -40,7 +40,23 @@ pub fn get_args() -> MyResult<Cli> {
 
 pub fn run(cli: Cli) -> MyResult<()> {
     let files = find_files(&cli.sources)?;
-    println!("{:#?}", files);
+    let fortunes = read_fortunes(&files)?;
+    if let Some(pattern) = &cli.pattern {
+        let mut source = String::new();
+        for fortune in fortunes {
+            if pattern.is_match(&fortune.text) {
+                if source != fortune.source {
+                    source = fortune.source.clone();
+                    eprintln!("({})\n%", source);
+                }
+                println!("{}\n%", fortune.text);
+            }
+        }
+    } else if let Some(fortune) = pick_fortune(&fortunes, cli.seed) {
+        println!("{}", fortune);
+    } else {
+        println!("No fortunes found");
+    }
     Ok(())
 }
 
@@ -74,9 +90,13 @@ fn read_fortunes(paths: &[PathBuf]) -> MyResult<Vec<Fortune>> {
         res.extend(
             contents
                 .split('%')
-                .filter(|&s| s != "\n")
+                .filter(|&s| !s.is_empty() && s != "\n")
                 .map(|phrase| Fortune {
-                    source: path.display().to_string(),
+                    source: path
+                        .file_name()
+                        .and_then(|f| f.to_str())
+                        .unwrap_or("")
+                        .to_string(),
                     text: phrase.trim().to_string(),
                 }),
         );
