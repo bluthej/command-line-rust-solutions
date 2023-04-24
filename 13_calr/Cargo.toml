@@ -1,8 +1,18 @@
 [package]
 name = "calr"
+authors = ["bluthej <joffrey.bluthe@e.email>"]
 version = "0.1.0"
+description = "Rust cal"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ansi_term = "0.12.1"
+chrono = "0.4.24"
+clap = { version = "4.2.4", features = ["derive"] }
+itertools = "0.10.5"
+
+[dev-dependencies]
+assert_cmd = "2.0.11"
+predicates = "3.0.3"
