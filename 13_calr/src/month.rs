@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) enum Month {
-    January,
+    January = 1,
     February,
     March,
     April,
