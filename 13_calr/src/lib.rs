@@ -21,8 +21,8 @@ pub struct Cli {
     show_year: bool,
 
     /// Year (1-9999)
-    #[arg(value_name = "YEAR", value_parser = clap::value_parser!(u32).range(..=9999))]
-    year: Option<u32>,
+    #[arg(value_name = "YEAR", value_parser = clap::value_parser!(i32).range(1..=9999))]
+    year: Option<i32>,
 }
 
 pub fn get_args() -> MyResult<Cli> {
