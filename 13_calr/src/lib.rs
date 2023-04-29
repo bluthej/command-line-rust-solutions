@@ -17,7 +17,7 @@ pub struct Cli {
     month: Option<Month>,
 
     /// Show whole current year
-    #[arg(short = 'y', long = "year")]
+    #[arg(short = 'y', long = "year", exclusive = true)]
     show_year: bool,
 
     /// Year (1-9999)
