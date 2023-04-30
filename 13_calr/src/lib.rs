@@ -4,6 +4,7 @@ use ansi_term::Style;
 use chrono::prelude::*;
 use clap::error::Result;
 use clap::Parser;
+use itertools::izip;
 use std::error::Error;
 use std::str::FromStr;
 
@@ -58,12 +59,10 @@ pub fn run(cli: Cli) -> MyResult<()> {
             })
             .collect();
         for (n, trimester) in months.chunks(3).enumerate() {
-            for ((m1, m2), m3) in trimester[0]
-                .iter()
-                .zip(trimester[1].iter())
-                .zip(trimester[2].iter())
-            {
-                println!("{}{}{}", m1, m2, m3);
+            if let [m1, m2, m3] = trimester {
+                for lines in izip!(m1, m2, m3) {
+                    println!("{}{}{}", lines.0, lines.1, lines.2);
+                }
             }
             if n < 3 {
                 println!();
