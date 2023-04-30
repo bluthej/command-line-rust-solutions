@@ -87,10 +87,8 @@ fn format_month(year: i32, month: &Month, print_year: bool, today: NaiveDate) ->
 
 fn last_day_in_month(year: i32, month: &Month) -> NaiveDate {
     NaiveDate::from_ymd_opt(year, month.clone() as u32, 1)
-        .unwrap()
-        .checked_add_months(chrono::Months::new(1))
-        .unwrap()
-        .pred_opt()
+        .and_then(|date| date.checked_add_months(chrono::Months::new(1)))
+        .and_then(|date| date.pred_opt())
         .unwrap()
 }
 
