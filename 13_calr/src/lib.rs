@@ -25,7 +25,7 @@ pub struct Cli {
 
     /// Show whole current year
     #[arg(short = 'y', long = "year", exclusive = true)]
-    show_year: bool,
+    print_year: bool,
 
     /// Year (1-9999)
     #[arg(value_name = "YEAR", value_parser = clap::value_parser!(i32).range(1..=9999))]
@@ -37,15 +37,45 @@ pub fn get_args() -> MyResult<Cli> {
 }
 
 pub fn run(cli: Cli) -> MyResult<()> {
+    let print_year = cli.print_year || (cli.year.is_some() && cli.month.is_none());
+
     let today = Local::now().date_naive();
     let month = cli.month.unwrap_or(
         Month::from_str(today.month().to_string().as_ref()).map_err(|e| format!("{:?}", e))?,
     );
     let year = cli.year.unwrap_or(today.year());
-    let fmt_month = format_month(year, &month, true, today);
-    for line in fmt_month {
-        println!("{}", line);
+
+    if print_year {
+        println!("{:32}", year);
+        let months: Vec<_> = (1..=12)
+            .map(|m| {
+                format_month(
+                    year,
+                    &Month::from_str(m.to_string().as_str()).unwrap(),
+                    false,
+                    today,
+                )
+            })
+            .collect();
+        for (n, trimester) in months.chunks(3).enumerate() {
+            for ((m1, m2), m3) in trimester[0]
+                .iter()
+                .zip(trimester[1].iter())
+                .zip(trimester[2].iter())
+            {
+                println!("{}{}{}", m1, m2, m3);
+            }
+            if n < 3 {
+                println!();
+            }
+        }
+    } else {
+        let fmt_month = format_month(year, &month, true, today);
+        for line in fmt_month {
+            println!("{}", line);
+        }
     }
+
     Ok(())
 }
 
