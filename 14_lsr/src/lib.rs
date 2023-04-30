@@ -28,7 +28,10 @@ pub fn get_args() -> MyResult<Cli> {
 }
 
 pub fn run(cli: Cli) -> MyResult<()> {
-    println!("{:#?}", cli);
+    let paths = find_files(&cli.paths, cli.all)?;
+    for path in paths {
+        println!("{}", path.display());
+    }
     Ok(())
 }
 
@@ -39,12 +42,12 @@ fn find_files(paths: &[String], show_hidden: bool) -> MyResult<Vec<PathBuf>> {
             res.push(path);
         } else if path.is_dir() {
             let Ok(dir) = path.read_dir() else {
-                eprintln!("{}: no such file or directory", path.display());
+                eprintln!("{}: No such file or directory", path.display());
                 continue;
             };
             for item in dir {
                 let Ok(entry) = item else {
-                    eprintln!("{}: no such file or directory", path.display());
+                    eprintln!("{}: No such file or directory", path.display());
                     continue;
                 };
                 let path = entry.path();
@@ -53,7 +56,7 @@ fn find_files(paths: &[String], show_hidden: bool) -> MyResult<Vec<PathBuf>> {
                 }
             }
         } else {
-            unimplemented!("I don't know what to do with symlinks");
+            eprintln!("{}: No such file or directory", path.display());
         }
     }
     Ok(res)
