@@ -11,7 +11,10 @@ use crate::month::Month;
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
-const LINE_WIDTH: usize = 22;
+const HEADER: &str = "Su Mo Tu We Th Fr Sa  ";
+const LINE_WIDTH: usize = HEADER.len();
+const N_WEEK_DAYS: usize = 7;
+const N_LINES: usize = 6;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -53,7 +56,7 @@ fn format_month(year: i32, month: &Month, print_year: bool, today: NaiveDate) ->
         format!("{:?}", month)
     };
     let first_line = format!("{:^width$}  ", title, width = LINE_WIDTH - 2);
-    let second_line = "Su Mo Tu We Th Fr Sa  ".to_string();
+    let second_line = HEADER.to_string();
 
     let last_day = last_day_in_month(year, month);
     let month = month.clone() as u32;
@@ -74,7 +77,7 @@ fn format_month(year: i32, month: &Month, print_year: bool, today: NaiveDate) ->
                 }),
         )
         .collect();
-    days.resize(6 * 7, "  ".to_string());
+    days.resize(N_LINES * N_WEEK_DAYS, "  ".to_string());
 
     [first_line, second_line]
         .into_iter()
