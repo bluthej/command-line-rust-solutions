@@ -1,6 +1,7 @@
 use chrono::{DateTime, Local};
 use clap::error::Result;
 use clap::Parser;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::{error::Error, os::unix::prelude::MetadataExt};
 use tabular::{Row, Table};
@@ -68,7 +69,7 @@ fn format_output(paths: &[PathBuf]) -> MyResult<String> {
     for path in paths {
         let file_type = if path.is_dir() { "d" } else { "-" };
         let metadata = path.metadata()?;
-        let permissions = metadata.mode();
+        let permissions = format_mode(metadata.mode());
         let n_links = metadata.nlink();
         let user = get_user_by_uid(metadata.uid()).unwrap();
         let group = get_group_by_gid(metadata.gid()).unwrap();
@@ -90,9 +91,23 @@ fn format_output(paths: &[PathBuf]) -> MyResult<String> {
     Ok(format!("{}", table))
 }
 
+/// Given a file mode in octal format like 0o751,
+/// return a string like "rwxr-x--x"
+fn format_mode(mode: u32) -> String {
+    let rights = "rwxrwxrwx";
+    let masks = [
+        0o400, 0o200, 0o100, 0o040, 0o020, 0o010, 0o004, 0o002, 0o001,
+    ];
+    rights
+        .chars()
+        .zip(masks.into_iter())
+        .map(|(c, m)| if (mode & m) == m { c } else { '-' })
+        .collect()
+}
+
 #[cfg(test)]
 mod test {
-    use super::find_files;
+    use super::{find_files, format_mode};
 
     #[test]
     fn test_find_files() {
@@ -183,5 +198,11 @@ mod test {
                 "tests/inputs/fox.txt",
             ]
         );
+    }
+
+    #[test]
+    fn test_format_mode() {
+        assert_eq!(format_mode(0o755), "rwxr-xr-x");
+        assert_eq!(format_mode(0o421), "r---w---x");
     }
 }
