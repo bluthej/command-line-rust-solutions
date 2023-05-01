@@ -99,6 +99,12 @@ fn format_output(paths: &[PathBuf]) -> MyResult<String> {
 
 /// Given a file mode in octal format like 0o751,
 /// return a string like "rwxr-x--x"
+///
+/// Example:
+/// ```
+/// let fmt = format_mode(0o755);
+/// assert_eq!(fmt, "rwxr-xr-x");
+/// ```
 fn format_mode(mode: u32) -> String {
     let rights = "rwxrwxrwx";
     let masks = [
