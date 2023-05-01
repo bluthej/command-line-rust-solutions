@@ -30,8 +30,14 @@ pub fn get_args() -> MyResult<Cli> {
 
 pub fn run(cli: Cli) -> MyResult<()> {
     let paths = find_files(&cli.paths, cli.all)?;
-    let s = format_output(&paths)?;
-    println!("{}", s);
+    if cli.long {
+        let long_out = format_output(&paths)?;
+        println!("{}", long_out);
+    } else {
+        for path in paths {
+            println!("{}", path.display());
+        }
+    }
     Ok(())
 }
 
@@ -41,13 +47,14 @@ fn find_files(paths: &[String], show_hidden: bool) -> MyResult<Vec<PathBuf>> {
         if path.is_file() {
             res.push(path);
         } else if path.is_dir() {
-            let Ok(dir) = path.read_dir() else {
-                eprintln!("{}: No such file or directory", path.display());
+            let dir = path.read_dir();
+            let Ok(dir) = dir else {
+                eprintln!("{}: {}", path.display(), dir.unwrap_err());
                 continue;
             };
             for item in dir {
                 let Ok(entry) = item else {
-                    eprintln!("{}: No such file or directory", path.display());
+                    eprintln!("{}: {}", path.display(), item.unwrap_err());
                     continue;
                 };
                 let path = entry.path();
@@ -56,7 +63,7 @@ fn find_files(paths: &[String], show_hidden: bool) -> MyResult<Vec<PathBuf>> {
                 }
             }
         } else {
-            eprintln!("{}: No such file or directory", path.display());
+            eprintln!("{}: {}", path.display(), path.metadata().unwrap_err());
         }
     }
     Ok(res)
